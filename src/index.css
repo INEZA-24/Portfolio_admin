@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --primary: #3498db;
+  --primary-dark: #2980b9;
+  --dark: #0a192f;
+  --darker: #020c1b;
+  --light: #ccd6f6;
+  --lighter: #e6f1ff;
+  --shadow-soft: 0 10px 30px rgba(52, 152, 219, 0.18);
+  --shadow-strong: 0 24px 60px rgba(2, 12, 27, 0.5);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--light);
+  background:
+    radial-gradient(circle at top left, rgba(52, 152, 219, 0.12), transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(41, 128, 185, 0.1), transparent 22%),
+    linear-gradient(180deg, #09162a 0%, #071426 45%, #020c1b 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(52, 152, 219, 0.12), transparent 30%),
+    radial-gradient(circle at 85% 15%, rgba(41, 128, 185, 0.1), transparent 22%),
+    linear-gradient(180deg, #09162a 0%, #071426 45%, #020c1b 100%);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2.3rem, 5vw, 4.5rem);
+  line-height: 0.98;
+  margin-bottom: 14px;
+  color: var(--lighter);
+}
+
+h2 {
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  line-height: 1.1;
+  margin-bottom: 10px;
+  color: var(--lighter);
+}
+
+h3 {
+  color: var(--lighter);
+}
+
+p {
+  color: var(--light);
+}
+
+#root {
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
