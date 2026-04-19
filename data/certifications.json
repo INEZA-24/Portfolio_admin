@@ -1,0 +1,44 @@
+{
+  "certifications": [
+    {
+      "id": "html-css-edx",
+      "title": "HTML & CSS Certificate",
+      "issuer": "WSCX/EDX",
+      "issuedAt": "April 2025",
+      "description": "Comprehensive certification covering front-end principles including HTML and CSS.",
+      "skills": ["HTML", "CSS"],
+      "image": "images/HTML AND CSS CERTIFICATE EDX-1.png",
+      "icon": "fa-code"
+    },
+    {
+      "id": "python-harvardx",
+      "title": "Python Certificate",
+      "issuer": "HARVARDX/EDX",
+      "issuedAt": "August 2025",
+      "description": "Comprehensive certification covering Python programming fundamentals and problem-solving with code.",
+      "skills": ["Object-Oriented Programming", "Fundamentals"],
+      "image": "images/Harvard_certificate_for_python-1.png",
+      "icon": "fa-python"
+    },
+    {
+      "id": "ai-fundamentals-alx",
+      "title": "AI Fundamentals",
+      "issuer": "ALX",
+      "issuedAt": "August 2025",
+      "description": "Focused on using AI tools like ChatGPT and Copilot for coding, productivity, and creative work.",
+      "skills": ["AI Tools", "Creative AI", "Problem Solving"],
+      "image": "images/ALX_AI_certificate.png",
+      "icon": "fa-brain"
+    },
+    {
+      "id": "cybersecurity-cisco",
+      "title": "Cybersecurity Fundamentals",
+      "issuer": "CISCO NETWORKING",
+      "issuedAt": "July 2025",
+      "description": "Foundational cybersecurity certification covering network security, cryptography, threat analysis, and best practices.",
+      "skills": ["Network Security", "Cryptography", "Threat Analysis", "Security Protocols", "Risk Management"],
+      "image": "images/Ethical_Hacker Cisco-1.png",
+      "icon": "fa-shield-alt"
+    }
+  ]
+}
