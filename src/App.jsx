@@ -203,7 +203,6 @@ function CertificationForm({
   onCancel,
   onFileUpload,
   uploadingFile,
-  uploadReady,
   submitting,
   editing,
 }) {
@@ -296,7 +295,7 @@ function CertificationForm({
           <small className="muted">
             {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
           </small>
-          {uploadReady ? (
+          {form.image ? (
             <small className="muted">Uploaded file ready. It will be used for “View Certificate”.</small>
           ) : (
             <small className="muted">Please upload a certificate image before saving.</small>
@@ -401,7 +400,6 @@ function App() {
   const [savingProject, setSavingProject] = useState(false)
   const [savingCertification, setSavingCertification] = useState(false)
   const [uploadingCertificateImage, setUploadingCertificateImage] = useState(false)
-  const [certificateUploadReady, setCertificateUploadReady] = useState(false)
   const [deletingId, setDeletingId] = useState('')
 
   const dashboardStats = useMemo(
@@ -551,7 +549,7 @@ function App() {
     event.preventDefault()
     setSavingCertification(true)
     setStatus({ tone: '', text: '' })
-    if (!certificateUploadReady || !certificationForm.image.trim()) {
+    if (!certificationForm.image.trim()) {
       setStatus({ tone: 'error', text: 'Please upload a certificate image before saving.' })
       setSavingCertification(false)
       return
@@ -572,7 +570,6 @@ function App() {
     }
 
     setCertificationForm(emptyCertification)
-    setCertificateUploadReady(false)
     setEditingCertificationId('')
     setStatus({
       tone: 'success',
@@ -655,7 +652,6 @@ function App() {
       image: certification.image,
       icon: certification.icon,
     })
-    setCertificateUploadReady(!!certification.image)
   }
 
   function handleProjectChange(event) {
@@ -678,7 +674,6 @@ function App() {
     const file = event.target.files?.[0]
     if (!file) return
     setUploadingCertificateImage(true)
-    setCertificateUploadReady(false)
     setStatus({ tone: '', text: '' })
     const extension = file.name.includes('.') ? file.name.split('.').pop() : 'png'
     const filePath = `certificates/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
@@ -698,7 +693,6 @@ function App() {
       return
     }
     setCertificationForm((current) => ({ ...current, image: data.publicUrl }))
-    setCertificateUploadReady(true)
     setStatus({ tone: 'success', text: 'Certificate image uploaded.' })
     setUploadingCertificateImage(false)
     event.target.value = ''
@@ -885,12 +879,10 @@ function App() {
             onChange={handleCertificationChange}
             onFileUpload={handleCertificateImageUpload}
             uploadingFile={uploadingCertificateImage}
-            uploadReady={certificateUploadReady}
             onSubmit={handleCertificationSubmit}
             onCancel={() => {
               setEditingCertificationId('')
               setCertificationForm(emptyCertification)
-              setCertificateUploadReady(false)
             }}
             submitting={savingCertification}
             editing={!!editingCertificationId}
