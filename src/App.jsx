@@ -203,6 +203,7 @@ function CertificationForm({
   onCancel,
   onFileUpload,
   uploadingFile,
+  uploadReady,
   submitting,
   editing,
 }) {
@@ -295,7 +296,7 @@ function CertificationForm({
           <small className="muted">
             {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
           </small>
-          {form.image ? (
+          {uploadReady ? (
             <small className="muted">Uploaded file ready. It will be used for “View Certificate”.</small>
           ) : (
             <small className="muted">Please upload a certificate image before saving.</small>
@@ -313,7 +314,7 @@ function CertificationForm({
         </label>
       </div>
 
-      <button className="primary-button" type="submit" disabled={submitting}>
+      <button className="primary-button" type="submit" disabled={submitting || uploadingFile}>
         {submitting ? 'Saving...' : editing ? 'Update Certificate' : 'Create Certificate'}
       </button>
     </form>
@@ -400,6 +401,7 @@ function App() {
   const [savingProject, setSavingProject] = useState(false)
   const [savingCertification, setSavingCertification] = useState(false)
   const [uploadingCertificateImage, setUploadingCertificateImage] = useState(false)
+  const [certificateUploadReady, setCertificateUploadReady] = useState(false)
   const [deletingId, setDeletingId] = useState('')
 
   const dashboardStats = useMemo(
@@ -549,7 +551,7 @@ function App() {
     event.preventDefault()
     setSavingCertification(true)
     setStatus({ tone: '', text: '' })
-    if (!certificationForm.image.trim()) {
+    if (!certificateUploadReady || !certificationForm.image.trim()) {
       setStatus({ tone: 'error', text: 'Please upload a certificate image before saving.' })
       setSavingCertification(false)
       return
@@ -570,6 +572,7 @@ function App() {
     }
 
     setCertificationForm(emptyCertification)
+    setCertificateUploadReady(false)
     setEditingCertificationId('')
     setStatus({
       tone: 'success',
@@ -652,6 +655,7 @@ function App() {
       image: certification.image,
       icon: certification.icon,
     })
+    setCertificateUploadReady(!!certification.image)
   }
 
   function handleProjectChange(event) {
@@ -674,10 +678,11 @@ function App() {
     const file = event.target.files?.[0]
     if (!file) return
     setUploadingCertificateImage(true)
+    setCertificateUploadReady(false)
     setStatus({ tone: '', text: '' })
-    const ext = file.name.split('.').pop()
-    const filePath = `certificates/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { error: uploadError } = await supabase.storage.from(certificateBucket).upload(filePath, file, {
+    const extension = file.name.includes('.') ? file.name.split('.').pop() : 'png'
+    const filePath = `certificates/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
+    const { data: uploadData, error: uploadError } = await supabase.storage.from(certificateBucket).upload(filePath, file, {
       cacheControl: '3600',
       upsert: false,
     })
@@ -686,8 +691,14 @@ function App() {
       setUploadingCertificateImage(false)
       return
     }
-    const { data } = supabase.storage.from(certificateBucket).getPublicUrl(filePath)
+    const { data } = supabase.storage.from(certificateBucket).getPublicUrl(uploadData?.path || filePath)
+    if (!data?.publicUrl) {
+      setStatus({ tone: 'error', text: 'Upload succeeded but URL generation failed. Please check bucket settings.' })
+      setUploadingCertificateImage(false)
+      return
+    }
     setCertificationForm((current) => ({ ...current, image: data.publicUrl }))
+    setCertificateUploadReady(true)
     setStatus({ tone: 'success', text: 'Certificate image uploaded.' })
     setUploadingCertificateImage(false)
     event.target.value = ''
@@ -874,10 +885,12 @@ function App() {
             onChange={handleCertificationChange}
             onFileUpload={handleCertificateImageUpload}
             uploadingFile={uploadingCertificateImage}
+            uploadReady={certificateUploadReady}
             onSubmit={handleCertificationSubmit}
             onCancel={() => {
               setEditingCertificationId('')
               setCertificationForm(emptyCertification)
+              setCertificateUploadReady(false)
             }}
             submitting={savingCertification}
             editing={!!editingCertificationId}
