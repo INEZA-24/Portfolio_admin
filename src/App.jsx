@@ -26,7 +26,7 @@ const emptyCertification = {
   issued_at: '',
   description: '',
   skills: '',
-  image: '',
+  certificate_path: '',
   icon: 'fa-certificate',
 }
 
@@ -67,6 +67,7 @@ function createCertificationPayload(form) {
     issued_at: form.issued_at.trim(),
     description: form.description.trim(),
     skills: splitList(form.skills),
+    certificate_path: form.certificate_path.trim(),
     icon: form.icon.trim() || 'fa-certificate',
   }
 }
@@ -295,7 +296,7 @@ function CertificationForm({
           <small className="muted">
             {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
           </small>
-          {form.image ? (
+          {form.certificate_path ? (
             <small className="muted">Uploaded file ready. It will be used for “View Certificate”.</small>
           ) : (
             <small className="muted">Please upload a certificate image before saving.</small>
@@ -359,7 +360,7 @@ function ItemList({ items, type, onEdit, onDelete, busyId }) {
             ) : (
               <div className="meta-row">
                 <span>{item.id}</span>
-                <span>{item.image}</span>
+                <span>{item.certificate_path || item.image}</span>
               </div>
             )}
           </div>
@@ -549,14 +550,13 @@ function App() {
     event.preventDefault()
     setSavingCertification(true)
     setStatus({ tone: '', text: '' })
-    if (!certificationForm.image.trim()) {
+    if (!certificationForm.certificate_path.trim()) {
       setStatus({ tone: 'error', text: 'Please upload a certificate image before saving.' })
       setSavingCertification(false)
       return
     }
 
     const payload = createCertificationPayload(certificationForm)
-    payload.image = certificationForm.image.trim()
     const query = editingCertificationId
       ? supabase.from('certifications').update(payload).eq('id', editingCertificationId)
       : supabase.from('certifications').insert(payload)
@@ -649,7 +649,7 @@ function App() {
       issued_at: certification.issued_at,
       description: certification.description,
       skills: joinList(certification.skills),
-      image: certification.image,
+      certificate_path: certification.certificate_path || certification.image || '',
       icon: certification.icon,
     })
   }
@@ -692,7 +692,7 @@ function App() {
       setUploadingCertificateImage(false)
       return
     }
-    setCertificationForm((current) => ({ ...current, image: data.publicUrl }))
+    setCertificationForm((current) => ({ ...current, certificate_path: data.publicUrl }))
     setStatus({ tone: 'success', text: 'Certificate image uploaded.' })
     setUploadingCertificateImage(false)
     event.target.value = ''
