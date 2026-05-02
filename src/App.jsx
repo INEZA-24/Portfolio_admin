@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { supabase, supabaseConfigured } from './lib/supabase'
 
+const presetProjectIcons = ['fa-code', 'fa-laptop-code', 'fa-rocket', 'fa-server', 'fa-mobile-alt']
+const presetCertificateIcons = ['fa-certificate', 'fa-award', 'fa-medal', 'fa-graduation-cap']
+const loginLogo = import.meta.env.VITE_ADMIN_LOGO_URL || '/logo.png'
+const certificateBucket = import.meta.env.VITE_CERTIFICATE_BUCKET || 'certificates'
+
 const emptyProject = {
   id: '',
   title: '',
@@ -166,13 +171,12 @@ function ProjectForm({ form, onChange, onSubmit, onCancel, submitting, editing }
 
         <label>
           <span>Icon</span>
-          <input
-            name="icon"
-            value={form.icon}
-            onChange={onChange}
-            placeholder="fa-seedling"
-            required
-          />
+          <input name="icon" value={form.icon} onChange={onChange} list="project-icons" placeholder="fa-seedling" required />
+          <datalist id="project-icons">
+            {presetProjectIcons.map((icon) => (
+              <option key={icon} value={icon} />
+            ))}
+          </datalist>
         </label>
 
         <label className="checkbox-row">
@@ -193,7 +197,16 @@ function ProjectForm({ form, onChange, onSubmit, onCancel, submitting, editing }
   )
 }
 
-function CertificationForm({ form, onChange, onSubmit, onCancel, submitting, editing }) {
+function CertificationForm({
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  onFileUpload,
+  uploadingFile,
+  submitting,
+  editing,
+}) {
   return (
     <form className="editor-card" onSubmit={onSubmit}>
       <div className="section-heading">
@@ -247,9 +260,9 @@ function CertificationForm({ form, onChange, onSubmit, onCancel, submitting, edi
           <span>Issued Date</span>
           <input
             name="issued_at"
+            type="date"
             value={form.issued_at}
             onChange={onChange}
-            placeholder="April 2025"
             required
           />
         </label>
@@ -288,16 +301,22 @@ function CertificationForm({ form, onChange, onSubmit, onCancel, submitting, edi
             required
           />
         </label>
+        <label className="full-width">
+          <span>Upload Certificate Image</span>
+          <input name="certificate_image_file" type="file" accept="image/*" onChange={onFileUpload} />
+          <small className="muted">
+            {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
+          </small>
+        </label>
 
         <label>
           <span>Icon</span>
-          <input
-            name="icon"
-            value={form.icon}
-            onChange={onChange}
-            placeholder="fa-code"
-            required
-          />
+          <input name="icon" value={form.icon} onChange={onChange} list="certificate-icons" placeholder="fa-certificate" required />
+          <datalist id="certificate-icons">
+            {presetCertificateIcons.map((icon) => (
+              <option key={icon} value={icon} />
+            ))}
+          </datalist>
         </label>
       </div>
 
@@ -387,6 +406,7 @@ function App() {
   const [editingCertificationId, setEditingCertificationId] = useState('')
   const [savingProject, setSavingProject] = useState(false)
   const [savingCertification, setSavingCertification] = useState(false)
+  const [uploadingCertificateImage, setUploadingCertificateImage] = useState(false)
   const [deletingId, setDeletingId] = useState('')
 
   const dashboardStats = useMemo(
@@ -651,6 +671,29 @@ function App() {
     }))
   }
 
+  async function handleCertificateImageUpload(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setUploadingCertificateImage(true)
+    setStatus({ tone: '', text: '' })
+    const ext = file.name.split('.').pop()
+    const filePath = `certificates/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error: uploadError } = await supabase.storage.from(certificateBucket).upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+    if (uploadError) {
+      setStatus({ tone: 'error', text: formatError(uploadError) })
+      setUploadingCertificateImage(false)
+      return
+    }
+    const { data } = supabase.storage.from(certificateBucket).getPublicUrl(filePath)
+    setCertificationForm((current) => ({ ...current, image: data.publicUrl }))
+    setStatus({ tone: 'success', text: 'Certificate image uploaded.' })
+    setUploadingCertificateImage(false)
+    event.target.value = ''
+  }
+
   if (!supabaseConfigured) {
     return (
       <main className="setup-screen">
@@ -663,6 +706,10 @@ function App() {
           </p>
           <p className="muted">
             Use the same publishable key and project URL as your public portfolio.
+          </p>
+          <p className="muted">
+            For certificate uploads, create a public Supabase Storage bucket named{' '}
+            <code>{certificateBucket}</code>.
           </p>
         </div>
       </main>
@@ -685,6 +732,14 @@ function App() {
       <main className="auth-shell">
         <section className="auth-copy">
           <p className="eyebrow">Private workspace</p>
+          <img
+            className="auth-logo"
+            src={loginLogo}
+            alt="Admin logo"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none'
+            }}
+          />
           <h1>Portfolio control room</h1>
           <p>
             Sign in with your Supabase account to manage projects and certificates from
@@ -818,6 +873,8 @@ function App() {
           <CertificationForm
             form={certificationForm}
             onChange={handleCertificationChange}
+            onFileUpload={handleCertificateImageUpload}
+            uploadingFile={uploadingCertificateImage}
             onSubmit={handleCertificationSubmit}
             onCancel={() => {
               setEditingCertificationId('')

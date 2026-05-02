@@ -72,6 +72,13 @@
   margin-top: 38px;
 }
 
+.auth-logo {
+  width: min(320px, 70%);
+  height: auto;
+  margin: 6px 0 10px;
+  object-fit: contain;
+}
+
 .feature-card {
   border-radius: 18px;
   padding: 22px;
