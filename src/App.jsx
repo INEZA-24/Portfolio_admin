@@ -202,8 +202,9 @@ function CertificationForm({
   onChange,
   onSubmit,
   onCancel,
-  onFileUpload,
+  onFileSelect,
   uploadingFile,
+  selectedFileName,
   submitting,
   editing,
 }) {
@@ -292,10 +293,11 @@ function CertificationForm({
 
         <label className="full-width">
           <span>Upload Certificate Image</span>
-          <input name="certificate_image_file" type="file" accept="image/*" onChange={onFileUpload} />
+          <input name="certificate_image_file" type="file" accept="image/*" onChange={onFileSelect} />
           <small className="muted">
             {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
           </small>
+          {selectedFileName ? <small className="muted">Selected: {selectedFileName}</small> : null}
           {form.certificate_path ? (
             <small className="muted">Uploaded file ready. It will be used for “View Certificate”.</small>
           ) : (
@@ -401,6 +403,7 @@ function App() {
   const [savingProject, setSavingProject] = useState(false)
   const [savingCertification, setSavingCertification] = useState(false)
   const [uploadingCertificateImage, setUploadingCertificateImage] = useState(false)
+  const [selectedCertificateFile, setSelectedCertificateFile] = useState(null)
   const [deletingId, setDeletingId] = useState('')
 
   const dashboardStats = useMemo(
@@ -550,13 +553,22 @@ function App() {
     event.preventDefault()
     setSavingCertification(true)
     setStatus({ tone: '', text: '' })
-    if (!certificationForm.certificate_path.trim()) {
+    let certificatePath = certificationForm.certificate_path.trim()
+    if (!certificatePath && selectedCertificateFile) {
+      certificatePath = await uploadCertificateFile(selectedCertificateFile)
+      if (!certificatePath) {
+        setSavingCertification(false)
+        return
+      }
+      setCertificationForm((current) => ({ ...current, certificate_path: certificatePath }))
+    }
+    if (!certificatePath) {
       setStatus({ tone: 'error', text: 'Please upload a certificate image before saving.' })
       setSavingCertification(false)
       return
     }
 
-    const payload = createCertificationPayload(certificationForm)
+    const payload = createCertificationPayload({ ...certificationForm, certificate_path: certificatePath })
     const query = editingCertificationId
       ? supabase.from('certifications').update(payload).eq('id', editingCertificationId)
       : supabase.from('certifications').insert(payload)
@@ -570,6 +582,7 @@ function App() {
     }
 
     setCertificationForm(emptyCertification)
+    setSelectedCertificateFile(null)
     setEditingCertificationId('')
     setStatus({
       tone: 'success',
@@ -652,6 +665,7 @@ function App() {
       certificate_path: certification.certificate_path || certification.image || '',
       icon: certification.icon,
     })
+    setSelectedCertificateFile(null)
   }
 
   function handleProjectChange(event) {
@@ -670,9 +684,17 @@ function App() {
     }))
   }
 
-  async function handleCertificateImageUpload(event) {
+  function handleCertificateFileSelect(event) {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      setSelectedCertificateFile(null)
+      return
+    }
+    setSelectedCertificateFile(file)
+    setStatus({ tone: '', text: '' })
+  }
+
+  async function uploadCertificateFile(file) {
     setUploadingCertificateImage(true)
     setStatus({ tone: '', text: '' })
     const extension = file.name.includes('.') ? file.name.split('.').pop() : 'png'
@@ -684,18 +706,17 @@ function App() {
     if (uploadError) {
       setStatus({ tone: 'error', text: formatError(uploadError) })
       setUploadingCertificateImage(false)
-      return
+      return ''
     }
     const { data } = supabase.storage.from(certificateBucket).getPublicUrl(uploadData?.path || filePath)
     if (!data?.publicUrl) {
       setStatus({ tone: 'error', text: 'Upload succeeded but URL generation failed. Please check bucket settings.' })
       setUploadingCertificateImage(false)
-      return
+      return ''
     }
-    setCertificationForm((current) => ({ ...current, certificate_path: data.publicUrl }))
     setStatus({ tone: 'success', text: 'Certificate image uploaded.' })
     setUploadingCertificateImage(false)
-    event.target.value = ''
+    return data.publicUrl
   }
 
   if (!supabaseConfigured) {
@@ -877,12 +898,14 @@ function App() {
           <CertificationForm
             form={certificationForm}
             onChange={handleCertificationChange}
-            onFileUpload={handleCertificateImageUpload}
+            onFileSelect={handleCertificateFileSelect}
             uploadingFile={uploadingCertificateImage}
+            selectedFileName={selectedCertificateFile?.name || ''}
             onSubmit={handleCertificationSubmit}
             onCancel={() => {
               setEditingCertificationId('')
               setCertificationForm(emptyCertification)
+              setSelectedCertificateFile(null)
             }}
             submitting={savingCertification}
             editing={!!editingCertificationId}
