@@ -67,7 +67,6 @@ function createCertificationPayload(form) {
     issued_at: form.issued_at.trim(),
     description: form.description.trim(),
     skills: splitList(form.skills),
-    image: form.image.trim(),
     icon: form.icon.trim() || 'fa-certificate',
   }
 }
@@ -291,22 +290,16 @@ function CertificationForm({
         </label>
 
         <label className="full-width">
-          <span>Certificate Image URL</span>
-          <input
-            name="image"
-            type="url"
-            value={form.image}
-            onChange={onChange}
-            placeholder="https://..."
-            required
-          />
-        </label>
-        <label className="full-width">
           <span>Upload Certificate Image</span>
           <input name="certificate_image_file" type="file" accept="image/*" onChange={onFileUpload} />
           <small className="muted">
             {uploadingFile ? 'Uploading image to Supabase storage...' : `Uploads to bucket: ${certificateBucket}`}
           </small>
+          {form.image ? (
+            <small className="muted">Uploaded file ready. It will be used for “View Certificate”.</small>
+          ) : (
+            <small className="muted">Please upload a certificate image before saving.</small>
+          )}
         </label>
 
         <label>
@@ -556,8 +549,14 @@ function App() {
     event.preventDefault()
     setSavingCertification(true)
     setStatus({ tone: '', text: '' })
+    if (!certificationForm.image.trim()) {
+      setStatus({ tone: 'error', text: 'Please upload a certificate image before saving.' })
+      setSavingCertification(false)
+      return
+    }
 
     const payload = createCertificationPayload(certificationForm)
+    payload.image = certificationForm.image.trim()
     const query = editingCertificationId
       ? supabase.from('certifications').update(payload).eq('id', editingCertificationId)
       : supabase.from('certifications').insert(payload)
